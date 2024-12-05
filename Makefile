@@ -1,12 +1,23 @@
 all: docx pdf odt txt
 
-docx: $(patsubst %.md,%.docx,$(wildcard */*.md))
+INPUTS = $(wildcard */*.md)
 
-pdf: $(patsubst %.md,%.pdf,$(wildcard */*.md))
+DOCX = $(patsubst %.md,%.docx,$(INPUTS))
+docx: $(DOCX)
 
-odt: $(patsubst %.md,%.odt,$(wildcard */*.md))
+PDF = $(patsubst %.md,%.pdf,$(INPUTS))
+pdf: $(PDF)
 
-txt: $(patsubst %.md,%.txt,$(wildcard */*.md))
+ODT = $(patsubst %.md,%.odt,$(INPUTS))
+odt: $(ODT)
+
+TXT = $(patsubst %.md,%.txt,$(INPUTS))
+txt: $(TXT)
+
+REFERENCE = $(addsuffix reference.odt,$(dir $(INPUTS)))
+reference: $(REFERENCE)
+
+.SECONDEXPANSION:
 
 %.docx: %.odt
 	soffice --headless --convert-to docx $< --outdir $(<D)
@@ -14,13 +25,15 @@ txt: $(patsubst %.md,%.txt,$(wildcard */*.md))
 %.pdf: %.odt
 	soffice --headless --convert-to pdf $< --outdir $(<D)
 
-%.odt: %.md Makefile
-	make $(@D)/reference.odt
+%.odt: %.md Makefile $$(@D)/reference.odt
+#	make $(@D)/reference.odt
 	pandoc --from=markdown --to=odt -o $@ --reference-doc=$(@D)/reference.odt $<
 
 %.txt: %.md
-	ln -snf $< $@
+	ln -snfr $< $@
 
 %/reference.odt:
 	[ -r $@ ] || pandoc -o "$@" --print-default-data-file reference.odt
 
+clean:
+	rm -vf $(DOCX) $(PDF) $(ODT) $(TXT) || :
